@@ -1,8 +1,14 @@
+mod middleware;
+mod routes;
+mod model;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use actix_web::{web, App, HttpRequest, HttpServer, Responder};
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{Item, read_all};
+use crate::middleware::redirect::RedirectSchemeBuilder;
+
+
 async fn index(_req: HttpRequest) -> impl Responder {
     "Hello."
 }
@@ -11,7 +17,6 @@ async fn index(_req: HttpRequest) -> impl Responder {
 async fn main() -> std::io::Result<()> {
     //load env file
     dotenvy::dotenv().unwrap();
-
     // load TLS keys
     // to create a self-signed temporary cert for testing:
     // `openssl req -x509 -newkey rsa:4096 -nodes -keyout cert.pem -out cert.pem -days 365 -subj '/CN=localhost'`
@@ -41,11 +46,34 @@ async fn main() -> std::io::Result<()> {
         .with_single_cert(certs,PrivateKey(keys[0].clone()))
         .unwrap();
 
-    let bind_to= dotenvy::var("bind.address")
-        .unwrap_or(String::from("127.0.0.1:8080"));
+    let host = dotenvy::var("bind.host")
+        .unwrap_or("localhost".to_string());
+    let port = ":".to_string() + & dotenvy::var("bind.port")
+        .unwrap_or("8080".to_string());
+    let tls_port =":".to_string() + & dotenvy::var("bind.tls_port")
+        .unwrap_or("8443".to_string());
 
-    HttpServer::new(|| App::new().route("/", web::get().to(index)))
-        .bind_rustls(bind_to, config)?
-        .run()
-        .await
+    let bind_host = host.clone()+&port;
+    let bind_tls_host = host.clone()+&tls_port;
+
+    let http= HttpServer::new(move ||
+        App::new().wrap(
+            RedirectSchemeBuilder::new()
+            .replacements(&[(&port,&tls_port)])
+            .build()
+        )
+    )
+    .bind(bind_host)?.run();
+
+    let https=HttpServer::new(||
+        App::new()
+        .route("/", web::get().to(index))
+    )
+    .bind_rustls(bind_tls_host, config)?.run();
+
+    let result=futures::join!(https,http);
+    match result.0 {
+        Ok(_) => result.1,
+        Err(_) => result.0
+    }
 }
