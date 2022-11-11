@@ -1,0 +1,13 @@
+[package]
+name = "whatever"
+version = "0.0.1"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dotenvy = "0.15"
+rustls-pemfile = "1.0.1"
+rustls = "0.20"
+actix-web = { version = "4", features = ["rustls"] }
+diesel = { version = "2.0", features = ["postgres"] }
