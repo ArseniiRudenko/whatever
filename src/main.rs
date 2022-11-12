@@ -1,6 +1,6 @@
 mod middleware;
 mod routes;
-mod model;
+mod models;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use actix_web::{web, App, HttpRequest, HttpServer, Responder};
@@ -16,7 +16,7 @@ async fn index(_req: HttpRequest) -> impl Responder {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     //load env file
-    dotenvy::dotenv().unwrap();
+    dotenvy::dotenv().ok();
     // load TLS keys
     // to create a self-signed temporary cert for testing:
     // `openssl req -x509 -newkey rsa:4096 -nodes -keyout cert.pem -out cert.pem -days 365 -subj '/CN=localhost'`
