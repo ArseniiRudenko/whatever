@@ -15,3 +15,4 @@ Cargo.lock
 # other file types we don't want
 *.pem
 *.log
+/.env
