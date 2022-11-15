@@ -53,6 +53,6 @@ create unique index users_first_name_surname_patronym_date_of_birth_uindex
 
 alter table users
     add constraint users_pk
-        primary key (email);d
+        primary key (email);
 
 SELECT diesel_manage_updated_at('users');
